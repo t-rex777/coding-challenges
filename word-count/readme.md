@@ -1,11 +1,12 @@
-## Challenge link
+# Challenge link
+
 [Word Count Challenge](https://codingchallenges.substack.com/p/coding-challenge-1)
 
-## How to create a custom command 
+## How to create a custom command
 
 ### Add permission access for the executable file
 
-- `chmod +x linux-wc.rb` 
+- `chmod +x linux-wc.rb`
 - chmod is a Unix/Linux command that stands for "change mode". It's used to change the permissions of files and directories.
 - syntax `chmod [permissions] [file]`
 
