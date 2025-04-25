@@ -1,34 +1,72 @@
+# frozen_string_literal: true
+
 # Parses the provided JSON file to check if its valid
 class JsonParser
-  attr_accessor :tokens, :result
+  attr_accessor :tokens, :result, :json
 
   def initialize(json)
-    @tokens = { close_braces: 0, open_braces: 0 }
+    @json = json
+    @tokens = { close_braces: 0, open_braces: 0, commas: 0, semi_colons: 0, keys: [], values: [] }
     @result = json.to_s
   end
 
-  def split_by(identifier, update_to)
+  def find_and_add(identifier, update_to)
     @result.split('') do |key|
       @tokens[update_to] += 1 if key == identifier
     end
   end
 
+  def find_keys_values
+    @result.split(',') do |word|
+      word.split(':') do |key_value, index|
+        index.even ? @tokens[:keys].push(key_value) : @tokens[:values].push(key_value)
+      end
+    end
+  end
+
   def lexer
-    split_by('{', :open_braces)
-    split_by('}', :close_braces)
+    find_and_add('{', :open_braces)
+    find_and_add('}', :close_braces)
+    find_and_add(',', :commas)
+    find_and_add(',', :semi_colons)
+
+    return unless braces
+
+    find_keys_values
+  end
+
+  def braces
+    unless @tokens[:open_braces].positive? && @tokens[:close_braces].positive?
+      puts 'Empty File'
+      exit 1
+    end
+
+    return if @tokens[:open_braces] == @tokens[:close_braces]
+
+    puts 'Invalid JSON file'
+    exit 1
+  end
+
+  def commas
+    return if @tokens[:semi_colons] - 1 == @tokens[:commas]
+
+    puts 'Invalid JSON'
+    exit 1
+  end
+
+  def keys
+    @result[:keys] do |key|
+      unless key.is_a(String)
+        puts 'key is not a string'
+        exit 1
+      end
+    end
   end
 
   def parser
-    unless @tokens[:open_braces].positive? && @tokens[:close_braces].positive?
-      puts 'File is empty'
-      exit 1
-    end
-
-    unless @tokens[:open_braces] == @tokens[:close_braces]
-      puts 'Invalid JSON'
-      exit 1
-    end
-
+    braces
+    commas
+    keys
     puts 'Valid JSON'
   end
 
