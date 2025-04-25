@@ -28,7 +28,7 @@ class JsonParser
     find_and_add('{', :open_braces)
     find_and_add('}', :close_braces)
     find_and_add(',', :commas)
-    find_and_add(',', :semi_colons)
+    find_and_add(':', :semi_colons)
 
     return unless braces
 
@@ -48,15 +48,19 @@ class JsonParser
   end
 
   def commas
+    return unless @tokens[:commas].positive?
+
     return if @tokens[:semi_colons] - 1 == @tokens[:commas]
 
-    puts 'Invalid JSON'
+    puts 'Invalid JSON, got extra comma'
     exit 1
   end
 
   def keys
-    @result[:keys] do |key|
-      unless key.is_a(String)
+    return unless @tokens[:keys].length.positive?
+
+    @tokens[:keys].each do |key|
+      unless key.is_a?(String)
         puts 'key is not a string'
         exit 1
       end
