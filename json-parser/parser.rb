@@ -15,8 +15,8 @@ class JsonParser
   NUMBER_REGEX = /-?\d+(?:\.\d+)?/.freeze
   BOOLEAN_REGEX = /true|false/.freeze
   NULL_REGEX = /null/.freeze
-  VALUE_REGEX = /:\s?["']?[\w\s_-]+["']?/.freeze
-  VALID_VALUES = /-?\d+(?:\.\d+)?|true|false|null|["']?[\w\s_-]+["']/.freeze
+  VALUE_REGEX = /:(\s?.+),/.freeze
+  VALID_VALUES = /-?\d+(?:\.\d+)?|true|false|null|["']?[\w\s_-]+["']|(\{\})/.freeze
   INVALID_COMMAS = /,\s?\}/.freeze
 
   def initialize(json)
@@ -24,6 +24,13 @@ class JsonParser
     @tokens = { close_braces: 0, open_braces: 0, commas: 0, semi_colons: 0, keys: [], values: [] }
     @result = json.to_s
   end
+
+  def check
+    lexer
+    parser
+  end
+
+  private
 
   def find_pattern
     open_braces = @result.scan(OPEN_BRACE_REGEX)
@@ -39,20 +46,16 @@ class JsonParser
     @tokens[:semi_colons] = semi_colons.length
     @tokens[:keys] = keys
     @tokens[:values] = values
-  end
 
-  def find_and_add(identifier, update_to)
-    @result.split('') do |key|
-      @tokens[update_to] += 1 if key == identifier
-    end
+    puts "values: #{values}"
   end
 
   def lexer
     find_pattern
-    nil unless braces
+    nil unless check_braces
   end
 
-  def braces
+  def check_braces
     unless @tokens[:open_braces].positive? && @tokens[:close_braces].positive?
       puts 'Empty File'
       exit 1
@@ -64,7 +67,7 @@ class JsonParser
     exit 1
   end
 
-  def commas
+  def check_commas
     return unless @tokens[:commas].positive?
 
     return if @result.scan(INVALID_COMMAS).empty?
@@ -73,7 +76,7 @@ class JsonParser
     exit 1
   end
 
-  def keys
+  def check_keys
     return unless @tokens[:keys].length.positive?
 
     @tokens[:keys].each do |key|
@@ -84,28 +87,30 @@ class JsonParser
     end
   end
 
-  def values
-    return unless @tokens[:values].length.positive?
-
-    @tokens[:values].each do |value|
-      unless value.match(VALID_VALUES)
-        puts "Invalid value #{value}"
-        exit 1
+  def check_values(values)
+    values.each do |value|
+      if value.is_a?(Array)
+        if value.length.positive?
+          check_values(value)
+        else
+          continue
+        end
+      else
+        result = value.to_s
+        unless result.match(VALID_VALUES)
+          puts "Invalid value #{value}"
+          exit 1
+        end
       end
     end
   end
 
   def parser
-    braces
-    commas
-    keys
-    values
+    check_braces
+    check_commas
+    check_keys
+    check_values(@tokens[:values])
     puts 'Valid JSON'
-  end
-
-  def check
-    lexer
-    parser
   end
 end
 
