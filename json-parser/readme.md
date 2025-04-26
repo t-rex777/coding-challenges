@@ -28,3 +28,7 @@ Here, we have to verify if we have tokens in correct format
   - digit (1-9)
   - (.) decimal
   - E or e (exponent)
+
+## TODO
+
+- [ ] verify step4 test
